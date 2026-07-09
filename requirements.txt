@@ -1,0 +1,8 @@
+pandas
+numpy
+sqlalchemy
+pathlib
+pyarrow
+openpyxl
+streamlit
+plotly
