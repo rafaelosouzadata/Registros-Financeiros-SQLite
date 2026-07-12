@@ -23,7 +23,8 @@ O projeto possui scripts que automatizam a inicialização para que você não p
 ```bash
 python3 -m venv venv
 venv\Scripts\activate
-pip install -r requirements.txt 
+pip install -r requirements.txt
+
 ```
 3. Dê um duplo clique no arquivo `Abrir_Windows.bat`.
 
@@ -35,5 +36,6 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 chmod +x Abrir_Linux.sh
+
 ```
 3. Dê um duplo clique no arquivo `Abrir_Linux.sh`.
