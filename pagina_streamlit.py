@@ -14,6 +14,7 @@ import modulo_dbt as mod_dbt
 import graficos as mod_graph
 import plotly.express as px
 from streamlit_option_menu import option_menu
+from sqlalchemy import *
 
 
 st.set_page_config(
@@ -30,10 +31,10 @@ with st.sidebar:
     # pagina = st.radio("Navegação", pags)
 
     pagina = option_menu(
-        menu_title=None,                               # Título do menu (None para ficar limpo)
-        options=pags,  # Opções do menu
-        default_index=0,                               # Qual aba começa ativa
-        orientation="vertical",                      # Transforma em abas horizontais
+        menu_title=None,                            
+        options=pags,  
+        default_index=0,
+        orientation="vertical",
         )
 
 if st.button("Atualizar Dados"):
@@ -43,12 +44,15 @@ if st.button("Atualizar Dados"):
         st.success("Dados Atualizados!")
         st.rerun()
 
+if pagina == "Menu":
+    st.title("Em Desenvolvimento")
+    st.header("Abra a lateral esquerda para mais opções")
 if pagina == "Cadastro":
     aba = option_menu(
-        menu_title=None,                               # Título do menu (None para ficar limpo)
-        options=["Membros", "Dízimos"],  # Opções do menu
-        default_index=0,                               # Qual aba começa ativa
-        orientation="horizontal",                      # Transforma em abas horizontais
+        menu_title=None,                            
+        options=["Membros", "Dízimos"],  
+        default_index=0,                 
+        orientation="horizontal",        
         )
     if aba == "Membros":
         st.title(f"Cadastro de Membros")
@@ -61,10 +65,10 @@ if pagina == "Cadastro":
 if pagina == "Visualização":
 
         aba = option_menu(
-        menu_title=None,                               # Título do menu (None para ficar limpo)
-        options=["Membros", "Dízimos"],  # Opções do menu
-        default_index=0,                               # Qual aba começa ativa
-        orientation="horizontal",                      # Transforma em abas horizontais
+        menu_title=None,                 
+        options=["Membros", "Dízimos"],  
+        default_index=0,                               
+        orientation="horizontal",                      
         )
 
         if aba == "Membros":
@@ -84,19 +88,35 @@ if pagina == "Visualização":
             st.dataframe(df)
         
         if aba == "Dízimos":
-            # df = pd.DataFrame(mod_graph.grafico_tabela_dizimos(engine))
-            # st.dataframe(df)
+            with engine.begin() as conn:
+                cte = mod_graph.cte_gold_dizimos(conn)
+                stmt = select(distinct(cte.c.ano_mes).label("ano_mes")).order_by(cte.c.ano_mes.desc())
+                res = conn.execute(stmt).mappings().all()
+                df = pd.DataFrame(res)
 
+            obreiros_membros_ano_mes = st.selectbox("Escolha o Mês", df)
             coluna1, coluna2 = st.columns(2)
-            dizimo_membros, dizimo_obreiros = mod_graph.tabela_dizimo_membros_obreiros(engine)
+            dizimo_membros, dizimo_obreiros = mod_graph.tabela_dizimo_membros_obreiros(engine, obreiros_membros_ano_mes)
 
             with coluna1:
                 st.subheader("Dízimo dos Membros")
                 st.dataframe(dizimo_membros)
+                
+                try:
+                    total_membros = dizimo_membros["valor"].sum()
+                except:
+                    total_membros = 0
+                st.write(f"Valor Total: {total_membros}")
 
             with coluna2:
                 st.subheader("Dízimo dos Obreiros")
                 st.dataframe(dizimo_obreiros)
+
+                try:
+                    total_obreiros = dizimo_obreiros["valor"].sum()
+                except:
+                    total_obreiros = 0 
+                st.write(f"Valor Total: {total_obreiros}")
 
             fig2 = mod_graph.grafico_saldo_mes(engine)
             st.plotly_chart(fig2)

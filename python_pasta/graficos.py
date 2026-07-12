@@ -3,6 +3,7 @@ import plotly.express as px
 from sqlalchemy import *
 from python_pasta.modulo_database import *
 import streamlit as st
+import datetime
 
 def grafico_tabela_comum(tabela, engine=None):
 
@@ -130,10 +131,13 @@ def cte_gold_dizimos(engine):
 
     return stmt_gold_dizimos
 
-def tabela_dizimo_membros_obreiros(engine):
+def tabela_dizimo_membros_obreiros(engine, ano_mes):
 
     if engine is None:
         engine = conexao_banco()
+
+    ano = int(ano_mes.split("-")[0])
+    mes = int(ano_mes.split("-")[1])
 
     metadata = pegar_metadata(engine)
 
@@ -141,23 +145,21 @@ def tabela_dizimo_membros_obreiros(engine):
 
     stmt_dizimo_membros = (select(stmt_gold_dizimos.c.data,
                                   stmt_gold_dizimos.c.nome_membro.label("nome"),
-                                  stmt_gold_dizimos.c.valor,
-                                  func.sum(stmt_gold_dizimos.c.valor)
-                                        .over(partition_by=stmt_gold_dizimos.c.ano_mes,
-                                              order_by=stmt_gold_dizimos.c.data).label("soma_total"))
-                           .where(stmt_gold_dizimos.c.cargo == "MEMBRO")
+                                  stmt_gold_dizimos.c.valor)
+                           .where(and_(stmt_gold_dizimos.c.cargo == "MEMBRO",
+                                       extract("year", stmt_gold_dizimos.c.data) == ano,
+                                       extract("month", stmt_gold_dizimos.c.data) == mes))
                            .order_by(stmt_gold_dizimos.c.data, stmt_gold_dizimos.c.nome_membro)
-                            )
+                           )
 
     stmt_dizimo_obreiros = (select(stmt_gold_dizimos.c.data,
                                    stmt_gold_dizimos.c.cargo,
                                    stmt_gold_dizimos.c.nome_membro.label("nome"),
-                                   stmt_gold_dizimos.c.valor,
-                                   func.sum(stmt_gold_dizimos.c.valor)
-                                        .over(partition_by=stmt_gold_dizimos.c.ano_mes,
-                                              order_by=stmt_gold_dizimos.c.data).label("soma_total"))
-                           .where(not_(stmt_gold_dizimos.c.cargo == "MEMBRO"))
-                           .order_by(stmt_gold_dizimos.c.data, stmt_gold_dizimos.c.nome_membro)
+                                   stmt_gold_dizimos.c.valor)
+                            .where(and_(not_(stmt_gold_dizimos.c.cargo == "MEMBRO"),
+                                       extract("year", stmt_gold_dizimos.c.data) == ano,
+                                       extract("month", stmt_gold_dizimos.c.data) == mes))
+                            .order_by(stmt_gold_dizimos.c.data, stmt_gold_dizimos.c.nome_membro)
                             )
 
     with engine.begin() as conn:
