@@ -14,7 +14,7 @@ def pegar_metadata(engine):
 def conexao_banco():
 	caminho = Path(__file__).resolve().parent.parent / "Database.db"
 	caminho = caminho.as_posix()
-	engine = create_engine("sqlite:////" + str(caminho))
+	engine = create_engine("sqlite:///" + str(caminho))
 	return engine
 
 def salvar_bd(df, tabela, engine):
