@@ -1,5 +1,5 @@
 @echo off
 echo iniciando Servidor...
 
-source venv/bin/activate
+.venv\Scripts\activate
 streamlit run pagina_streamlit.py

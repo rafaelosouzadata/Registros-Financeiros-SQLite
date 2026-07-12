@@ -22,7 +22,7 @@ O projeto possui scripts que automatizam a inicialização para que você não p
 2. Execute o código para baixar dependências: 
 	```bash
 	python3 -m venv venv
-	source venv/bin/activate
+	.venv\Scripts\activate
 	pip install -r requirements.txt 
 	```
 3. Dê um duplo clique no arquivo `Abrir_Windows.bat`.
