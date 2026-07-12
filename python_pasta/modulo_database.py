@@ -12,7 +12,8 @@ def pegar_metadata(engine):
 # -> engine
 @st.cache_resource
 def conexao_banco():
-	caminho = Path(__file__).resolve().parent / "Database.db"
+	caminho = Path(__file__).resolve().parent.parent / "Database.db"
+	caminho = caminho.as_posix()
 	engine = create_engine("sqlite:////" + str(caminho))
 	return engine
 
