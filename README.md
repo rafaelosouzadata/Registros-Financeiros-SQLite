@@ -29,14 +29,11 @@ O projeto possui scripts que automatizam a inicialização para que você não p
 
 ### No Linux / macOS
 1. Abra o terminal na pasta do projeto.
-2. Execute o código para baixar dependências: 
-	```bash
-	python3 -m venv venv
-	source venv/bin/activate
-	pip install -r requirements.txt 
-	```
-2. Dê permissão de execução para o script (necessário apenas na primeira vez):
-   ```bash
-   chmod +x Abrir_Linux.sh
-   ```
+2. Execute o código para baixar dependências e dar permição de execução para o script: 
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+chmod +x Abrir_Linux.sh
+```
 3. Dê um duplo clique no arquivo `Abrir_Linux.sh`.
