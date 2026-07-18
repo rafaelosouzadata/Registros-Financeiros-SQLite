@@ -1,4 +1,4 @@
 testes/
 **/__pycache__/
 venv/
-python_pasta/Database.db
+**/Database.db
