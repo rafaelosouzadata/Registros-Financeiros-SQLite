@@ -1,0 +1,41 @@
+name: Construindo executavel com Nuitka
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch: # Permite rodar manualmente pelo painel do GitHub
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # VM Linux
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        # Sintaxe em Bash para verificar se o requirements.txt existe antes de instalar
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+    - name: Build Executable via Nuitka
+      uses: Nuitka/Nuitka-Action@main
+      with:
+        nuitka-version: 'main'
+        script-name: run.py
+        onefile: true
+        include-data-files: 'pagina_streamlit.py=pagina_streamlit.py'
+        include-package: 'python_pasta'
+        include-package-data: 'streamlit'
+
+    - name: Upload Executable Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: meu-programa-executavel
+        path: build/*.bin  # No Linux o Nuitka gera arquivos .bin
