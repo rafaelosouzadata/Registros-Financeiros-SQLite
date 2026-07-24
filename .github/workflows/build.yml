@@ -29,7 +29,7 @@ jobs:
       with:
         nuitka-version: 'main'
         script-name: run.py
-        onefile: true
+        mode: 'onefile'
         include-data-files: 'pagina_streamlit.py=pagina_streamlit.py'
         include-package: 'python_pasta'
         include-package-data: 'streamlit'
