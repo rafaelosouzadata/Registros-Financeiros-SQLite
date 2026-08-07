@@ -6,3 +6,4 @@ openpyxl
 streamlit
 streamlit-option-menu
 plotly
+flet
