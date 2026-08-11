@@ -15,24 +15,24 @@ import graficos as mod_graph
 import plotly.express as px
 from streamlit_option_menu import option_menu
 from sqlalchemy import *
-
-
+ # asds
 st.set_page_config(
-    page_title="Financeiro Igreja",       
-    page_icon="📊",                        
-    layout="wide",                        
+    page_title="Financeiro Igreja",
+    page_icon="📊",
+    layout="wide",
     initial_sidebar_state="expanded"
 )
 mod_db.criar_tabelas()
-engine = mod_db.conexao_banco()
+conexao= mod_db.ConexaoBanco()
+engine = conexao.engine
 
 with st.sidebar:
     pags = ["Menu","Cadastro", "Visualização"]
     # pagina = st.radio("Navegação", pags)
 
     pagina = option_menu(
-        menu_title=None,                            
-        options=pags,  
+        menu_title=None,
+        options=pags,
         default_index=0,
         orientation="vertical",
         )
@@ -49,10 +49,10 @@ if pagina == "Menu":
     st.header("Abra a lateral esquerda para mais opções")
 if pagina == "Cadastro":
     aba = option_menu(
-        menu_title=None,                            
-        options=["Membros", "Dízimos"],  
-        default_index=0,                 
-        orientation="horizontal",        
+        menu_title=None,
+        options=["Membros", "Dízimos"],
+        default_index=0,
+        orientation="horizontal",
         )
     if aba == "Membros":
         st.title(f"Cadastro de Membros")
@@ -65,10 +65,10 @@ if pagina == "Cadastro":
 if pagina == "Visualização":
 
         aba = option_menu(
-        menu_title=None,                 
-        options=["Membros", "Dízimos"],  
-        default_index=0,                               
-        orientation="horizontal",                      
+        menu_title=None,
+        options=["Membros", "Dízimos"],
+        default_index=0,
+        orientation="horizontal",
         )
 
         if aba == "Membros":
@@ -81,12 +81,12 @@ if pagina == "Visualização":
 
             with coluna2:
 
-                pie_cargos = mod_graph.grafico_pie_cargos(engine)   
+                pie_cargos = mod_graph.grafico_pie_cargos(engine)
                 st.plotly_chart(pie_cargos)
-                
+
             df = pd.DataFrame(mod_graph.grafico_tabela_comum("membros"))
             st.dataframe(df)
-        
+
         if aba == "Dízimos":
             with engine.begin() as conn:
                 cte = mod_graph.cte_gold_dizimos(conn)
@@ -101,7 +101,7 @@ if pagina == "Visualização":
             with coluna1:
                 st.subheader("Dízimo dos Membros")
                 st.dataframe(dizimo_membros)
-                
+
                 try:
                     total_membros = dizimo_membros["valor"].sum()
                 except:
@@ -115,7 +115,7 @@ if pagina == "Visualização":
                 try:
                     total_obreiros = dizimo_obreiros["valor"].sum()
                 except:
-                    total_obreiros = 0 
+                    total_obreiros = 0
                 st.write(f"Valor Total: {total_obreiros}")
 
             fig2 = mod_graph.grafico_saldo_mes(engine)
