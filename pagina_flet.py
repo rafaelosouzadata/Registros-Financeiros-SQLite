@@ -22,13 +22,20 @@ def main(page: ft.Page):
     main_container = ft.Container(
                                 expand = True,
                                 # height = 200,
-                                # width = 400,
+                                width = 600,
                                 padding=20,
                                 bgcolor= "BLUE"
     )
 
     Formulario_Membros = mod_form.CadastroMembro(page)
-    main_container.content = Formulario_Membros
+    Formulario_Cargo = mod_form.CadastroCargo(page)
+    Formulario_Dizimo = mod_form.CadastroDizimo(page)
+
+    pagina_cadastro = ft.Column(
+        [Formulario_Cargo, Formulario_Membros, Formulario_Dizimo]
+    )
+    main_container.content = pagina_cadastro
+
     page.add(main_container)
 
 ft.run(main)

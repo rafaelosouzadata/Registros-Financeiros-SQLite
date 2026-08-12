@@ -106,6 +106,11 @@ def registro_dizimo():
                            \nvalor: {valor}""")
 
 
+# ===================================
+#         LIMPEZA DE DADOS
+# ===================================
+
+# >>>> Dataclasses <<<<
 @dataclass
 class Cargo:
     nome: str
@@ -132,6 +137,7 @@ class Dizimo:
     data: date
     id_membro: int
 
+# >>>> Organização para Limpeza <<<<
 def limpeza_dados(tabela, **kwargs):
 
     def _empacotar_membros(nome, id_cargo, sexo, data_nascimento):
@@ -160,24 +166,18 @@ def limpeza_dados(tabela, **kwargs):
 
         return registro
 
-    if tabela == "membros":
-        return _empacotar_membros(**kwargs)
+    dataclasses = {
+        "membros": _empacotar_membros,
+        "cargos": _empacotar_cargos,
+        "dizimos": _empacotar_dizimos
+    }
 
-    elif tabela == "cargos":
-        return _empacotar_cargos(**kwargs)
+    empacotador = dataclasses.get(tabela)
 
-    elif tabela == "dizimos":
-        return _empacotar_dizimos(**kwargs)
-
-    else:
+    if not empacotador:
         raise ValueError(f"Tabela '{tabela}' é inválida ou não suportada.")
 
-
-class SalvarDados:
-
-    def __init__(self, conexao):
-        self.engine = conexao.engine
-        self.metadata = conexao.metadata
+    return empacotador(**kwargs)
 
 class ConexaoBanco:
 
@@ -195,9 +195,11 @@ class ConexaoBanco:
         metadata = MetaData(); metadata.reflect(bind=self.engine)
         return metadata
 
-# ============== FLET ==============
+# ============== USER INTERFACE ==============
+
 import flet as ft
 
+# >>>> Criação de Widgets Padrões
 def container_padrao(conteudo):
     container = ft.Container(
         expand= True,
@@ -251,37 +253,19 @@ class DataPicker:
 
         self.page.update()
 
+# ==============================
+#           FORMULARIOS
+# ==============================
 
-class Notificacao:
-
-    def __init__(self, page: ft.Page, mensagem) -> None:
-        self.page = page
-        self.mensagem = mensagem
-
-    def ativar_notf(self):
-
-        self.notf = ft.SnackBar(
-            ft.Text(self.mensagem),
-            open = True,
-            duration= 3000,
-        )
-
-        self.page.overlay.append(self.notf)
-
-        self.page.update()
-
-
-
-
-# =============== Formularios ===============
 def CadastroMembro(page):
+
+    # >>>> Entrada de Dados <<<<
     data_nascimento = DataPicker(page)
 
     coluna_data = ft.Column([data_nascimento.botao],
         horizontal_alignment= ft.CrossAxisAlignment.CENTER)
 
     nome = textbox_padrao("Digite seu Nome")
-
 
     cargos = [
         [0, "Membro"],
@@ -291,7 +275,6 @@ def CadastroMembro(page):
     cargo = ft.Dropdown(
         label="Cargo",
         options=[ft.dropdown.Option(key=key, text=value) for key, value in cargos],
-        # editable= True,
     )
 
     generos = [
@@ -303,13 +286,21 @@ def CadastroMembro(page):
         options=[ft.dropdown.Option(key=key, text=value) for key, value in generos]
     )
 
+    # >>>> Confirmação e Envio <<<<
     def salvar_dados(e, page, tabela, **kwargs):
         registro = limpeza_dados(tabela, **kwargs)
 
+        notf = ft.SnackBar(
+            ft.Text(f"Dados {registro}!", color= "#114308"),
+            show_close_icon= True,
+            open= False,
+            duration= 3000,
+            bgcolor= "#afffa2",
+        )
 
-        notf = Notificacao(page, f"Dados {registro}!")
+        page.overlay.append(notf)
 
-        notf.ativar_notf()
+        notf.open = True
 
     salvar = ft.Button(
         content= "Salvar Dados",
@@ -322,10 +313,123 @@ def CadastroMembro(page):
         ),
     )
 
+    # >>>> Layout <<<<
     linha_dados = ft.Row([coluna_data, sexo, cargo],
         alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
 
     coluna_pessoa = ft.Column([nome, linha_dados, salvar],
+        horizontal_alignment = ft.CrossAxisAlignment.CENTER)
+
+    container = container_padrao(coluna_pessoa)
+
+
+    return container
+
+def CadastroCargo(page):
+
+    # >>>> Entrada de Dados <<<<
+    nome = textbox_padrao("Digite o Nome do Cargo")
+
+    # >>>> Confirmação e Envio <<<<
+    def salvar_dados(e, page, tabela, **kwargs):
+        registro = limpeza_dados(tabela, **kwargs)
+
+        notf = ft.SnackBar(
+            ft.Text(f"Dados {registro}!", color= "#114308"),
+            show_close_icon= True,
+            open= False,
+            duration= 3000,
+            bgcolor= "#afffa2",
+        )
+
+        page.overlay.append(notf)
+
+        notf.open = True
+
+    salvar = ft.Button(
+        content= "Salvar Dados",
+        icon= ft.Icons.SAVE,
+        on_click= lambda e: salvar_dados(e, page, "cargos",
+            nome = nome.value,
+        ),
+    )
+
+    # >>>> Layout <<<<
+
+    coluna_pessoa = ft.Column([nome, salvar],
+        horizontal_alignment = ft.CrossAxisAlignment.CENTER)
+
+    container = container_padrao(coluna_pessoa)
+
+    return container
+
+def CadastroDizimo(page):
+
+    lista_membros = {
+        "Rafael": 1,
+        "Rayelle": 2,
+        "Elisabete": 3
+    }
+
+    label_autocomplete = ft.Text("Membro:")
+
+    nome = ft.AutoComplete(
+        expand=True,
+        suggestions= [ft.AutoCompleteSuggestion(key, key) for key in lista_membros.keys()]
+    )
+
+    nome_membro = ft.Row(
+        [label_autocomplete, nome],
+        tight=True,
+        # horizontal_alignment= ft.CrossAxisAlignment.START
+    )
+
+    valor = ft.TextField(
+        label = "Valor",
+        hint_text = 0.0,
+
+        input_filter=ft.InputFilter(
+            allow=True,
+            regex_string= r"^\d*\.?\d*$",
+            replacement_string=""
+        )
+    )
+
+    data = DataPicker(page)
+
+    # >>>> Confirmação e Envio <<<<
+    def salvar_dados(e, page, tabela, **kwargs):
+
+        registro = limpeza_dados(tabela, **kwargs)
+
+        notf = ft.SnackBar(
+            ft.Text(f"Dados {registro}!", color= "#114308"),
+            show_close_icon= True,
+            open= False,
+            duration= 3000,
+            bgcolor= "#afffa2",
+        )
+
+        page.overlay.append(notf)
+
+        notf.open = True
+
+    salvar = ft.Button(
+        content= "Salvar Dados",
+        icon= ft.Icons.SAVE,
+        on_click= lambda e: salvar_dados(e, page, "dizimos",
+            id_membro = lista_membros.get(nome.value),
+            valor = valor.value,
+            data = data.data_selecionada,
+        ),
+    )
+
+    # >>>> Layout <<<<
+
+    linha_meio = ft.Row(
+        [data.botao, valor]
+    )
+    coluna_pessoa = ft.Column([nome_membro, linha_meio, salvar],
         horizontal_alignment = ft.CrossAxisAlignment.CENTER)
 
     container = container_padrao(coluna_pessoa)
