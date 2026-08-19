@@ -1,9 +1,9 @@
-name: Construindo executavel com Nuitka
+name: Construindo executavel Flet com Nuitka
 
 on:
   push:
     branches: [ "main", "master" ]
-  workflow_dispatch: # Permite rodar manualmente pelo painel do GitHub
+  workflow_dispatch:
 
 jobs:
   build:
@@ -17,25 +17,36 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
+        cache: 'pip'
+
+    # Correção 1: Adicionadas dependências do Linux necessárias para compilar C++ no Nuitka
+    - name: Install Linux Build Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential python3-dev
 
     - name: Install Dependencies
+      # Correção 2: Alterada a sintaxe do PowerShell (Test-Path) para a sintaxe Bash do Linux
       run: |
         python -m pip install --upgrade pip
-        # Sintaxe em Bash para verificar se o requirements.txt existe antes de instalar
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install nuitka zstandard
 
     - name: Build Executable via Nuitka
-      uses: Nuitka/Nuitka-Action@main
+      uses: Nuitka/Nuitka-Action@v1
       with:
-        nuitka-version: 'main'
-        script-name: run.py
+        nuitka-version: 'stable'
+        script-name: pagina_flet.py
         mode: 'onefile'
-        include-data-files: 'pagina_streamlit.py=pagina_streamlit.py'
-        include-package: 'python_pasta'
-        include-package-data: 'streamlit'
+        disable-console: 'true' 
+        include-package: 'flet,flet_core,python_pasta'
+        include-package-data: 'flet'
 
     - name: Upload Executable Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: meu-programa-executavel
-        path: build/*.bin  # No Linux o Nuitka gera arquivos .bin
+        name: registro-financeiro-flet-linux
+        # Correção 3: No Linux, o Nuitka gera um arquivo binário sem extensão ou com extensão .bin
+        path: |
+          *.bin
+          pagina_flet
