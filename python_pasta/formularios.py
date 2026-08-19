@@ -2,13 +2,14 @@ from ast import UnaryOp
 from ctypes import alignment
 from pydoc import text
 from pandas._libs import pandas
-
+from sqlalchemy.orm import Session
+from sqlalchemy.ext.automap import automap_base
 import pandas as pd
 
 import streamlit as st
 from datetime import datetime, date, time
 import modulo_database as mod_db
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from sqlalchemy import select
 
 def registro_membros():
@@ -110,7 +111,7 @@ def registro_dizimo():
 #         LIMPEZA DE DADOS
 # ===================================
 
-# >>>> Dataclasses <<<<
+# >>>> Dataclasses de Limpeza <<<<
 @dataclass
 class Cargo:
     nome: str
@@ -123,13 +124,14 @@ class Membro:
     nome: str
     sexo: str
     data_nascimento: date
-    id_cargo: int
+    cargo: str
 
 
     def __post_init__(self):
 
         self.nome = self.nome.strip().upper()
         self.sexo = self.sexo.strip().upper()
+        self.cargo = self.cargo.strip().upper()
 
 @dataclass
 class Dizimo:
@@ -137,34 +139,44 @@ class Dizimo:
     data: date
     id_membro: int
 
-# >>>> Organização para Limpeza <<<<
-def limpeza_dados(tabela, **kwargs):
+# >>>> Organização para Salvar Dados <<<<
 
-    def _empacotar_membros(nome, id_cargo, sexo, data_nascimento):
-        registro = Membro(
-            nome=nome,
-            id_cargo=id_cargo,
-            sexo=sexo,
-            data_nascimento=data_nascimento
-        )
+def salvar_dados(e, tabela, **kwargs):
 
-        return registro
-
-    def _empacotar_cargos(nome):
+    def _empacotar_cargos(Base, nome):
         registro = Cargo(
             nome=nome,
         )
 
-        return registro
+        Cargo_TBL = Base.classes.cargos
+        dados = Cargo_TBL(**asdict(registro))
 
-    def _empacotar_dizimos(valor, data, id_membro):
+        return dados
+
+    def _empacotar_membros(Base, nome, cargo, sexo, data_nascimento):
+        registro = Membro(
+            nome=nome,
+            cargo=cargo,
+            sexo=sexo,
+            data_nascimento=data_nascimento
+        )
+
+        Membro_TBL = Base.classes.membros
+        dados = Membro_TBL(**asdict(registro))
+
+        return dados
+
+    def _empacotar_dizimos(Base, valor, data, id_membro):
         registro = Dizimo(
             valor = valor,
             data = data,
             id_membro = id_membro,
         )
 
-        return registro
+        Dizimo_TBL = Base.classes.dizimos
+        dados = Dizimo_TBL(**asdict(registro))
+
+        return dados
 
     dataclasses = {
         "membros": _empacotar_membros,
@@ -177,23 +189,44 @@ def limpeza_dados(tabela, **kwargs):
     if not empacotador:
         raise ValueError(f"Tabela '{tabela}' é inválida ou não suportada.")
 
-    return empacotador(**kwargs)
+    conexao = mod_db.ConexaoBanco()
 
-class ConexaoBanco:
+    Base = automap_base()
+    Base.prepare(autoload_with=conexao.engine)
 
-    def __init__(self):
-        self.engine = self._pegar_engine
-        self.metadata = self._pegar_metadata
+    with Session(conexao.engine) as session:
+        session.add(empacotador(Base, **kwargs))
+        session.commit()
 
-    def _pegar_engine(self):
-        caminho = Path(__file__).resolve().parent.parent / "Database.db"
-        caminho = caminho.as_posix()
-        engine = create_engine("sqlite:///" + str(caminho))
-        return engine
+    notf = ft.SnackBar(
+        ft.Text("Dados Salvos com Sucesso!", color= "#114308"),
+        show_close_icon= True,
+        open= False,
+        duration= 3000,
+        bgcolor= "#afffa2",
+    )
 
-    def _pegar_metadata(self):
-        metadata = MetaData(); metadata.reflect(bind=self.engine)
-        return metadata
+    e.page.overlay.append(notf)
+
+    notf.open = True
+
+    e.page.update()
+
+# class ConexaoBanco:
+
+#     def __init__(self):
+#         self.engine = self._pegar_engine
+#         self.metadata = self._pegar_metadata
+
+#     def _pegar_engine(self):
+#         caminho = Path(__file__).resolve().parent.parent / "Database.db"
+#         caminho = caminho.as_posix()
+#         engine = create_engine("sqlite:///" + str(caminho))
+#         return engine
+
+#     def _pegar_metadata(self):
+#         metadata = MetaData(); metadata.reflect(bind=self.engine)
+#         return metadata
 
 # ============== USER INTERFACE ==============
 
@@ -202,12 +235,14 @@ import flet as ft
 # >>>> Criação de Widgets Padrões
 def container_padrao(conteudo):
     container = ft.Container(
-        expand= True,
+        # expand= True,
         content=conteudo,
         padding= 20,
         bgcolor = ft.Colors.BLUE_GREY_900,
-        border_radius = 12
-    )
+        border_radius = 12,
+        width = 500,
+        height = 200,
+        )
 
     return container
 
@@ -224,7 +259,7 @@ class DataPicker:
         self.page = page
 
         self.datapicker = ft.DatePicker(
-            first_date = date(2020, 1, 1),
+            first_date = date(1920, 1, 1),
             last_date = datetime.now().date(),
             confirm_text = "Confirmar",
             cancel_text = "Cancelar",
@@ -274,42 +309,28 @@ def CadastroMembro(page):
     ]
     cargo = ft.Dropdown(
         label="Cargo",
-        options=[ft.dropdown.Option(key=key, text=value) for key, value in cargos],
+        options=[ft.dropdown.Option(key=value, text=value) for _, value in cargos],
     )
 
     generos = [
-        [0, "Homem"],
-        [1, "Mulher"]
+        "Homem",
+        "Mulher"
     ]
     sexo = ft.Dropdown(
         label="Sexo",
-        options=[ft.dropdown.Option(key=key, text=value) for key, value in generos]
+        options=[ft.dropdown.Option(key=key, text=key) for key in generos]
     )
 
     # >>>> Confirmação e Envio <<<<
-    def salvar_dados(e, page, tabela, **kwargs):
-        registro = limpeza_dados(tabela, **kwargs)
-
-        notf = ft.SnackBar(
-            ft.Text(f"Dados {registro}!", color= "#114308"),
-            show_close_icon= True,
-            open= False,
-            duration= 3000,
-            bgcolor= "#afffa2",
-        )
-
-        page.overlay.append(notf)
-
-        notf.open = True
 
     salvar = ft.Button(
         content= "Salvar Dados",
         icon= ft.Icons.SAVE,
-        on_click= lambda e: salvar_dados(e, page, "membros",
+        on_click= lambda e: salvar_dados(e, "membros",
             nome = nome.value,
             data_nascimento = data_nascimento.data_selecionada,
             sexo = sexo.value,
-            id_cargo = cargo.value,
+            cargo = cargo.value,
         ),
     )
 
@@ -331,25 +352,11 @@ def CadastroCargo(page):
     nome = textbox_padrao("Digite o Nome do Cargo")
 
     # >>>> Confirmação e Envio <<<<
-    def salvar_dados(e, page, tabela, **kwargs):
-        registro = limpeza_dados(tabela, **kwargs)
-
-        notf = ft.SnackBar(
-            ft.Text(f"Dados {registro}!", color= "#114308"),
-            show_close_icon= True,
-            open= False,
-            duration= 3000,
-            bgcolor= "#afffa2",
-        )
-
-        page.overlay.append(notf)
-
-        notf.open = True
 
     salvar = ft.Button(
         content= "Salvar Dados",
         icon= ft.Icons.SAVE,
-        on_click= lambda e: salvar_dados(e, page, "cargos",
+        on_click= lambda e: salvar_dados(e, "cargos",
             nome = nome.value,
         ),
     )
@@ -364,12 +371,14 @@ def CadastroCargo(page):
     return container
 
 def CadastroDizimo(page):
+    import graficos as mod_graph
 
-    lista_membros = {
-        "Rafael": 1,
-        "Rayelle": 2,
-        "Elisabete": 3
-    }
+    conexao = mod_db.ConexaoBanco()
+
+    df = mod_graph.pesquisa_tabela_comum(conexao.engine, "membros", "nome")
+
+    lista_membros = dict(zip(df["nome"].tolist(), df["id"].tolist()))
+
 
     label_autocomplete = ft.Text("Membro:")
 
@@ -398,26 +407,11 @@ def CadastroDizimo(page):
     data = DataPicker(page)
 
     # >>>> Confirmação e Envio <<<<
-    def salvar_dados(e, page, tabela, **kwargs):
-
-        registro = limpeza_dados(tabela, **kwargs)
-
-        notf = ft.SnackBar(
-            ft.Text(f"Dados {registro}!", color= "#114308"),
-            show_close_icon= True,
-            open= False,
-            duration= 3000,
-            bgcolor= "#afffa2",
-        )
-
-        page.overlay.append(notf)
-
-        notf.open = True
 
     salvar = ft.Button(
         content= "Salvar Dados",
         icon= ft.Icons.SAVE,
-        on_click= lambda e: salvar_dados(e, page, "dizimos",
+        on_click= lambda e: salvar_dados(e, "dizimos",
             id_membro = lista_membros.get(nome.value),
             valor = valor.value,
             data = data.data_selecionada,

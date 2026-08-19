@@ -1,36 +1,9 @@
 from pathlib import Path
 import os
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Date, Float, update, select, Engine
+from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Date, Float, update, select, Engine, ForeignKey
 import pandas as pd
 import streamlit as st
 
-class ConexaoBanco:
-    _instancia = None
-
-    def __new__(cls, *args, **kwargs):
-        if cls._instancia is None:
-            cls._instancia = super().__new__(cls)
-            cls._instancia._inicializar()
-
-        return cls._instancia
-
-    def _inicializar(self, tipo = True) -> None:
-        if tipo:
-            self.engine: Engine = self._pegar_engine()
-        else:
-            self.engine: Engine = create_engine("sqlite:///:memory:")
-
-        self.metadata: MetaData = self._pegar_metadata()
-    def _pegar_engine(self) -> Engine:
-        caminho = Path(__file__).resolve().parent.parent / "Database.db"
-        caminho = caminho.as_posix()
-        engine = create_engine("sqlite:///" + str(caminho))
-        return engine
-
-    def _pegar_metadata(self) -> MetaData:
-        metadata = MetaData()
-        metadata.reflect(bind=self.engine)
-        return metadata
 
 def pegar_metadata(engine):
     metadata = MetaData()
@@ -86,3 +59,98 @@ def definir_tabelas(metadata):
     )
 
     return metadata
+
+
+def definir_tabelas(metadata):
+
+    membros_tbl = Table(
+        "membros",
+        metadata,
+        Column("id", Integer, primary_key=True, autoincrement=True),
+        Column("nome", String(100), nullable=False),
+        Column("sexo", String(10), nullable=False),
+        Column("data_nascimento", Date, nullable=False),
+        Column("cargo", String(20), nullable=True),
+        extend_existing=True
+    )
+
+    dizimo_tbl = Table(
+        "dizimos",
+        metadata,
+        Column("id", Integer, primary_key=True, autoincrement=True),
+        Column("valor", Float, nullable=False),
+        Column("id_membro", Integer, nullable=False),
+        Column("data", Date, nullable=False),
+        extend_existing=True
+    )
+    return metadata
+# ====================================
+#              SQL ORM
+# ====================================
+
+from typing import Optional, List
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session
+
+class ConexaoBanco:
+    _instancia = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instancia is None:
+            cls._instancia = super().__new__(cls)
+            cls._instancia._inicializar()
+
+        return cls._instancia
+
+    def _inicializar(self, tipo = True) -> None:
+        if tipo:
+            self.engine: Engine = self._pegar_engine()
+        else:
+            self.engine: Engine = create_engine("sqlite:///:memory:")
+
+        self.metadata: MetaData = self._pegar_metadata()
+        Base.metadata.create_all(self.engine)
+
+    def _pegar_engine(self) -> Engine:
+        caminho = Path(__file__).resolve().parent.parent / "Database.db"
+        caminho = caminho.as_posix()
+        engine = create_engine("sqlite:///" + str(caminho))
+        return engine
+
+    def _pegar_metadata(self) -> MetaData:
+        metadata = MetaData()
+        metadata.reflect(bind=self.engine)
+        return metadata
+
+class Base(DeclarativeBase):
+    pass
+
+# class Cargos_TBL(Base):
+#     __tablename__ = "cargos"
+
+#     id: Mapped[int] = mapped_column(primary_key=True)
+#     nome: Mapped[str] = mapped_column(String(15), nullable=False)
+
+
+class Membros_TBL(Base):
+    __tablename__ = "membros"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nome: Mapped[str] = mapped_column(String(100), nullable=False)
+    sexo: Mapped[str] = mapped_column(String(15))
+    data_nascimento: Mapped[str | None] = mapped_column(String(15))
+    cargo: Mapped[str | None] = mapped_column(String(15))
+
+    dizimos: Mapped[List["Dizimos_TBL"]] = relationship(
+        back_populates="membro", 
+        passive_deletes=True
+    )
+
+class Dizimos_TBL(Base):
+    __tablename__ = "dizimos"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    valor: Mapped[float] = mapped_column(nullable=False)
+    data: Mapped[str | None] = mapped_column(String(15))
+    id_membro: Mapped[int | None] = mapped_column(ForeignKey("membros.id", ondelete="SET NULL"))
+
+    membro: Mapped[Optional["Membros_TBL"]] = relationship(back_populates="dizimos")

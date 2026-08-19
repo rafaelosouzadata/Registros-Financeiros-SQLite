@@ -6,7 +6,8 @@ from pathlib import Path
 
 def dbt_run(engine):
 
-    metadata_engine = mod_db.pegar_metadata(engine)
+    metadata_engine = MetaData()
+    metadata_engine.reflect(bind=engine)
 
     metadata_novas_tabelas = drop_create_tabelas(engine)
     stmts = definindo_stmts(metadata_engine, metadata_novas_tabelas)
@@ -40,7 +41,7 @@ def definindo_stmts(metadata_engine, metadata_novas_tabelas):
     dizimo_tbl = metadata_engine.tables["dizimos"]
     membros_tbl = metadata_engine.tables["membros"]
 
-    dim_meses = metadata_engine.tables["dim_meses"]
+    # dim_meses = metadata_engine.tables["dim_meses"]
     fct_dizimos_tbl = metadata_novas_tabelas.tables["fct_dizimos"]
 
     ano = extract('year', dizimo_tbl.c.data)

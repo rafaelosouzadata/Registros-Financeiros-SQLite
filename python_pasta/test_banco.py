@@ -39,7 +39,7 @@ def test_estrutura_colunas_tabela_membros():
     membros = meta.tables["membros"]
 
     # Verifica os nomes das colunas presentes
-    colunas_esperadas = {"id", "nome", "sexo", "data_nascimento", , "cargo"}
+    colunas_esperadas = {"id", "nome", "sexo", "data_nascimento", "cargo"}
     assert set(membros.columns.keys()) == colunas_esperadas
 
 def test_criacao_das_tabelas_no_banco_sqlite_em_memoria():
