@@ -377,7 +377,10 @@ def CadastroDizimo(page):
 
     df = mod_graph.pesquisa_tabela_comum(conexao.engine, "membros", "nome")
 
-    lista_membros = dict(zip(df["nome"].tolist(), df["id"].tolist()))
+    try:
+        lista_membros = dict(zip(df["nome"].tolist(), df["id"].tolist()))
+    except:
+        return ft.Container()
 
 
     label_autocomplete = ft.Text("Membro:")

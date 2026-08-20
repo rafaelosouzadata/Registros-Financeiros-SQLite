@@ -81,7 +81,7 @@ def pesquisa_pie_sexo(engine):
 
 # Gráfico Matplot:
 
-def matplot_pie_sexo(engine):
+def matplot_pie_sexo(engine, ax):
 
     df = pesquisa_pie_sexo(engine)
 
@@ -92,16 +92,12 @@ def matplot_pie_sexo(engine):
 
     cores_lista = df["sexo"].map(cores_customizadas).fillna("#7f7f7f")
 
-    fig, ax = plt.subplots(figsize =(8, 5))
-
     ax.pie(df["quantidade"],labels=df["sexo"], autopct="%1.1f%%",startangle=90, colors=cores_lista)
 
     ax.set_title("Distribuição por Gênero", fontsize=14, fontweight="bold")
-    ax.legend()
+    # ax.legend()
 
-    plt.tight_layout()
-
-    return fig
+    return ax
 
 
 # Gráfico Plotly:
@@ -147,17 +143,15 @@ def pesquisa_pie_cargos(engine):
 
 # Gráfico Matplot:
 
-def matplot_pie_cargos(engine):
+def matplot_pie_cargos(engine, ax):
 
     df = pesquisa_pie_cargos(engine)
-
-    fig, ax = plt.subplots(figsize=(8, 5))
 
     ax.pie(df["quantidade"], labels=df["cargo"], autopct="%1.1f%%",startangle=90)
 
     ax.set_title("Distribuição por Cargo", fontsize=14, fontweight="bold")
-    ax.legend()
-    return ax.pie
+    # ax.legend()
+    return ax
 
 # Gráfico Plotly:
 

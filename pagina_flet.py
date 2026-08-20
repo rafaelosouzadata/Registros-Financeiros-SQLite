@@ -86,9 +86,42 @@ def main(page: ft.Page):
         # VISUALIZAÇÃO DE DADOS ( Membros )
 
         elif indice == 2:
+
+            # Gráficos
+            matplotlib.use("Agg")
+            graficos = {
+                "pie sexo": mod_graph.matplot_pie_sexo,
+                "pie cargos": mod_graph.matplot_pie_cargos,
+            }
+            
+            lista_graficos = []
+            plt.style.use("seaborn-v0_8")
+
+            fig, ax = plt.subplots(1, 2, figsize=(8, 5))
+
+            for a, funcao in zip(ax, graficos.values()):
+                ax_atual = funcao(conexao.engine, a)
+
+            plt.suptitle("Gráfico de Membros", fontsize=14, fontweight='bold')
+
+            plt.tight_layout()
+
+            svg_buffer = io.BytesIO()
+            plt.savefig(svg_buffer, format="svg", bbox_inches="tight")
+        
+
+            grafico = ft.Image(
+                svg_buffer.getvalue(),
+                fit="contain",
+                width=700,
+                height=400,
+            )
+
+            lista_graficos.append(grafico)
+
             # Atualização dos Dados no Sistema (DBT Like)
 
-            mod_dbt.dbt_run(conexao.engine)
+                mod_dbt.dbt_run(conexao.engine)
 
             notf = ft.SnackBar(
                 ft.Text("Deu tudo certo"),
@@ -98,31 +131,6 @@ def main(page: ft.Page):
             e.page.overlay.append(notf)
 
             notf.open = True
-
-            matplotlib.use("Agg")
-            graficos = {
-                "pie sexo": mod_graph.matplot_pie_sexo,
-                "pie cargos": mod_graph.matplot_pie_cargos,
-            }
-            
-            lista_graficos = []
-            plt.style.use("seaborn-v0_8")
-            for chave, funcoes in graficos.items():
-                fig = funcoes(conexao.engine)
-
-                svg_buffer = io.BytesIO()
-                plt.savefig(svg_buffer, format="svg", bbox_inches="tight")
-            
-
-                grafico = ft.Image(
-                    svg_buffer.getvalue(),
-                    fit="contain",
-                    width=700,
-                    height=400,
-                )
-
-                lista_graficos.append(grafico)
-
 
             # Gerenciador de Tabelas
 
