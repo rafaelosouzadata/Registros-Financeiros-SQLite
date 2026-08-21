@@ -22,28 +22,20 @@ jobs:
     - name: Install Linux Build Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential python3-dev
+        sudo apt-get install -y build-essential python3-dev patchelf
 
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        pip install nuitka zstandard
+        pip install nuitka zstandard python_pasta
 
     - name: Build Executable via Nuitka
-      uses: Nuitka/Nuitka-Action@main
-      with:
-        nuitka-version: 'main'
-        script-name: pagina_flet.py
-        mode: 'onefile'
-        disable-console: 'true' 
-        include-package: 'flet,flet_core,python_pasta'
-        include-package-data: 'flet'
+      run: |
+        nuitka --mode=onefile --include-package=flet --include-package=python_pasta --include-package-data=flet --assume-yes-for-downloads --output-dir=build pagina_flet.py
 
     - name: Upload Executable Artifact
       uses: actions/upload-artifact@v4
       with:
         name: registro-financeiro-flet-linux
-        path: |
-          *.bin
-          pagina_flet
+        path: build/*.bin  # <--- No Linux o executável fica na pasta build com extensão .bin ou sem extensão
