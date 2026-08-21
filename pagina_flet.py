@@ -36,50 +36,45 @@ def main(page: ft.Page):
     # ==========================
 
     # >>>> Navigation Rail: Cadastro, Visualização <<<<
-
-    # Destinações:
-
-
-
     # Função para Renderizar Página:
 
     def renderizar_pagina(page, main_container):
         indice = page.route
         conexao = mod_db.ConexaoBanco()
 
-        # MENU
-        if indice == "/menu":
-            conteudo = mod_pag.pagina_menu()
+        paginas = {
+            "/menu": mod_pag.pagina_menu,
+            "/cadastro": mod_pag.pagina_cadastro,
+            "/visualização": mod_pag.pagina_visualizacao
+        }
 
-        # CADASTRO DE REGISTROS
-        elif indice == "/cadastro":
-            conteudo = mod_pag.pagina_cadastro(page) 
-
-
-        # VISUALIZAÇÃO DE DADOS ( Membros )
-        elif indice == "/visualização":
-            conteudo = mod_pag.pagina_visualizacao(page, conexao) 
+        pag = paginas.get(indice)
+        conteudo = pag(page, conexao)
 
         main_container.content = conteudo
         page.update()
 
 
     # Objeto de Navigation Rail:
-    btn_menu = ft.Button(
-        "Menu",
-        on_click = lambda _:ir_para("/menu")
-        )
-    btn_cdst = ft.Button(
-        "Cadastro",
-        on_click = lambda _:ir_para("/cadastro")
-        )
-    btn_visu = ft.Button(
-        "visualização",
-        on_click = lambda _:ir_para("/visualização")        
-        )
 
-    botoes = ft.Column(
-        [btn_menu, btn_cdst, btn_visu],
+    botoes_config =[
+        ["Menu", "/menu"],
+        ["Cadastro", "/cadastro"],
+        ["Visualização", "/visualização"],
+    ]
+
+    botoes = []
+    for label, url in botoes_config:
+        btn = ft.Button(
+                label,
+                on_click = lambda _, url=url: ir_para(url)
+                )
+
+        botoes.append(btn)
+
+
+    colunas_botoes = ft.Column(
+        botoes,
         horizontal_alignment = ft.CrossAxisAlignment.CENTER
         )
 
@@ -91,16 +86,15 @@ def main(page: ft.Page):
 
     # >>>> Primeira Página Mostrada <<<<
 
-    main_container.content = ft.Text("Bem-Vindo ao Aplicativo!")
     row = ft.Row([
         # ft.Container(rail, height=page.window.height),
-        botoes,
+        colunas_botoes,
         ft.VerticalDivider(),
         main_container],
-        alignment = ft.MainAxisAlignment.CENTER
+        alignment = ft.MainAxisAlignment.CENTER,
     )
 
     page.add(row)
-    page.route = "/menu"
+    ir_para("/menu")
 
 ft.run(main)
