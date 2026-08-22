@@ -32,7 +32,7 @@ jobs:
 
     - name: Build Executable via Nuitka
       run: |
-        nuitka --mode=onefile --include-package=flet --include-package=python_pasta --include-package-data=flet --assume-yes-for-downloads --output-dir=build pagina_flet.py
+        nuitka --mode=onefile --follow-imports --include-package=flet --include-package=python_pasta --include-package-data=flet --assume-yes-for-downloads --output-dir=build pagina_flet.py
 
     - name: Upload Executable Artifact
       uses: actions/upload-artifact@v4

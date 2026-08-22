@@ -108,24 +108,80 @@ def pagina_visualizacao(e, conexao):
 
         mod_dbt.dbt_run(conexao.engine)
 
-        notf = ft.SnackBar(
-            ft.Text("Deu tudo certo"),
-            open= False,
-            duration=5000,)
+        # notf = ft.SnackBar(
+        #     ft.Text("Deu tudo certo"),
+        #     open= False,
+        #     duration=5000,)
 
-        e.page.overlay.append(notf)
+        # e.page.overlay.append(notf)
 
-        notf.open = True
+        # notf.open = True
+        
+        # Gráficos
+        matplotlib.use("Agg")
 
+        graficos = {
+            "mes_ano":mod_graph.matplot_saldo_por_mesano,
+        }
+
+        lista_graficos = []
+        plt.style.use("fivethirtyeight")
+
+        fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+
+        for a, funcao in zip([ax], graficos.values()):
+            ax_atual = funcao(conexao.engine, a)
+
+        plt.suptitle("Gráfico de Dízimos", fontsize=14, fontweight='bold')
+
+        plt.tight_layout()
+
+        svg_buffer = io.BytesIO()
+        plt.savefig(svg_buffer, format="svg", bbox_inches="tight")
+
+
+        grafico = ft.Image(
+            svg_buffer.getvalue(),
+            fit="contain",
+            width=700,
+            height=400,
+        )
+
+        lista_graficos.append(grafico)
         # Gerenciador de Tabelas
 
-        df2 = mod_graph.pesquisa_tabela_comum(conexao.engine, "fct_dizimos", "valor")
-        tabela_dizimos = mod_graph.df_para_flet(df2)
-        
+        df_memb, df_obr = mod_graph.tabela_dizimo_membros_obreiros(conexao.engine, "2026-08")
+
+        coluna_membros = ft.Column(
+            [ft.Text("Dizimo dos Membros"),
+            mod_graph.df_para_flet(df_memb)],
+            horizontal_alignment = ft.CrossAxisAlignment.CENTER
+        )
+
+        coluna_obreiros = ft.Column(
+            [ft.Text("Dizimo dos Obreiros"),
+            mod_graph.df_para_flet(df_obr)
+            ],
+            horizontal_alignment = ft.CrossAxisAlignment.CENTER
+        )        
+
+        linha_dizimos = ft.Row(
+            [coluna_membros, ft.VerticalDivider(width=30), coluna_obreiros],
+            alignment = ft.MainAxisAlignment.SPACE_BETWEEN,
+            vertical_alignment = ft.CrossAxisAlignment.START,
+            )
+
     # Organizando Layout
 
+        ft_graficos = ft.Row(
+            lista_graficos,
+            alignment = ft.MainAxisAlignment.CENTER
+            )
+
         coluna = ft.Column(
-            [tabela_dizimos])
+            [ft_graficos, linha_dizimos],
+            horizontal_alignment = ft.CrossAxisAlignment.CENTER
+            )
 
         conteudo_pagina.content = coluna
 

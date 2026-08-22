@@ -344,6 +344,17 @@ def pesquisa_saldo_por_mesano(engine):
 
     return df
 
+def matplot_saldo_por_mesano(engine, ax):
+    df = pesquisa_saldo_por_mesano(engine)
+    
+    df = (df.groupby(["ano_mes"])
+            .agg({"soma_mensal":"max"})
+            )
+    barras = ax.bar(df.index, df["soma_mensal"])
+
+    ax.bar_label(barras, padding=3)
+    return ax
+
 # Gráfico Plotly:
 
 def grafico__saldo_por_mesano(engine=None):
